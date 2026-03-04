@@ -1,0 +1,48 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:ital,wght@0,300;0,400;0,500;0,600;0,700;1,300;1,400;1,500;1,600;1,700&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500;1,600;1,700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Poppins", sans-serif;
+  --font-serif: "Playfair Display", serif;
+  
+  --color-ekovia-green: #1A2E26;
+  --color-ekovia-gold: #D4A017;
+  --color-ekovia-bg: #FDFBF7;
+  --color-ekovia-leaf: #5B7C3B;
+  --color-ekovia-sand: #C8A96A;
+  --color-ekovia-olive: #7A8B80;
+}
+
+@layer base {
+  body {
+    @apply antialiased bg-ekovia-bg text-ekovia-green font-sans font-normal;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-medium;
+  }
+}
+
+.writing-vertical-rl {
+  writing-mode: vertical-rl;
+}
+
+.gold-gradient {
+  background: linear-gradient(135deg, #D4A017 0%, #B8860B 100%);
+}
+
+.green-gradient {
+  background: linear-gradient(135deg, #1A2E26 0%, #2D4F41 100%);
+}
+
+@layer utilities {
+  @keyframes shake {
+    10%, 90% { transform: translate3d(-1px, 0, 0); }
+    20%, 80% { transform: translate3d(2px, 0, 0); }
+    30%, 50%, 70% { transform: translate3d(-4px, 0, 0); }
+    40%, 60% { transform: translate3d(4px, 0, 0); }
+  }
+  .animate-shake {
+    animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+  }
+}
