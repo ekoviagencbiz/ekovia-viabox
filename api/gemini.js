@@ -1,40 +1,52 @@
 export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+  // CORS (istersen kalsın)
+  res.setHeader("Access-Control-Allow-Origin", "*");
+  res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
 
-  const { prompt } = req.body;
-
-  if (!prompt) {
-    return res.status(400).json({ error: "Prompt gerekli" });
-  }
+  if (req.method === "OPTIONS") return res.status(200).end();
+  if (req.method !== "POST") return res.status(405).json({ ok: false, error: "Method Not Allowed" });
 
   try {
-    const response = await fetch(
-      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=${process.env.GEMINI_API_KEY}`,
-      {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          contents: [
-            {
-              parts: [{ text: prompt }],
-            },
-          ],
-        }),
-      }
-    );
+    const apiKey = process.env.GEMINI_API_KEY;
+    if (!apiKey) {
+      return res.status(500).json({ ok: false, error: "GEMINI_API_KEY missing on server" });
+    }
 
-    const data = await response.json();
+    const { prompt } = typeof req.body === "string" ? JSON.parse(req.body) : (req.body || {});
+    if (!prompt) {
+      return res.status(400).json({ ok: false, error: "Missing prompt" });
+    }
 
-    const text =
-      data?.candidates?.[0]?.content?.parts?.[0]?.text ||
-      "Yanıt üretilemedi.";
+    const url =
+      "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-pro:generateContent?key=" +
+      encodeURIComponent(apiKey);
 
-    res.status(200).json({ ok: true, text });
-  } catch (error) {
-    res.status(500).json({ ok: false, error: error.message });
+    const r = await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        generationConfig: { temperature: 0.7, maxOutputTokens: 512 },
+      }),
+    });
+
+    const data = await r.json();
+
+    // Gemini hata döndürdüyse net gösterelim
+    if (!r.ok) {
+      return res.status(r.status).json({ ok: false, error: data?.error?.message || "Gemini API error", raw: data });
+    }
+
+    const text = data?.candidates?.[0]?.content?.parts?.map(p => p?.text).filter(Boolean).join("") || "";
+
+    if (!text) {
+      // Burada da raw döndürüyoruz ki bir daha kör kalmayalım
+      return res.status(200).json({ ok: false, error: "Empty response from Gemini", raw: data });
+    }
+
+    return res.status(200).json({ ok: true, text });
+  } catch (e) {
+    return res.status(500).json({ ok: false, error: e?.message || String(e) });
   }
 }
